@@ -7,7 +7,7 @@ import numpy as np
 import json
 import dataloader as dl
 import common as com
-
+import getThreshold as gt
 
 def create_mini_batches(x, batch_size):
     mini_batches = []
@@ -161,3 +161,7 @@ if draw_anomaly:
 plt.savefig('plots\\two_loss_1.png') 
 plt.show()
 
+
+
+
+threshold = gt.get_threshold()
