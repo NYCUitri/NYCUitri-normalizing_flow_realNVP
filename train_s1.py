@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
     # Plot target distribution
     
-    train_data=dl.dataloader(machine_type='valve', begin=0, end=1000)
+    train_data=dl.dataloader(machine_type='valve', begin=0, end=500)
     # train_data/=1000
     # print(train_data)
 

@@ -4,9 +4,9 @@ model_directory: ./model
 result_directory: ./result
 result_file: result.csv
 
-MLP_dim : 128
+MLP_dim : 32
 max_fpr : 0.1
-NF_layers  : 128
+NF_layers  : 256
 
 feature:
   n_mels: 128
@@ -21,7 +21,7 @@ fit:
     optimizer : adam
     loss : mean_squared_error
   epochs : 2000
-  batch_size : 4096
+  batch_size : 2048
   shuffle : True
   validation_split : 0.1
   verbose : 1

@@ -121,7 +121,7 @@ def get_threshold():
         ax1.hist((loss_normal[loss_normal>=t_star]),bins=bins_list, color = 'purple', alpha=0.25)
         ax1.hist(loss_anomaly,bins=list(np.array(bins_list)), color = 'orange', alpha=0.25) 
         ax1.hist(loss_anomaly[loss_anomaly<=t_star],bins=list(np.array(bins_list)), color = 'red', alpha=0.25) 
-        plt.savefig("plots/t_t.png")
+        plt.savefig("plots/t.png")
         plt.show()
 
 
