@@ -4,10 +4,6 @@
  @author Toshiki Nakamura, Yuki Nikaido, and Yohei Kawaguchi (Hitachi Ltd.)
  Copyright (C) 2020 Hitachi, Ltd. All right reserved.
 """
-
-
-
-
 ########################################################################
 # import additional python-library
 ########################################################################
@@ -144,8 +140,6 @@ def dataloader(machine_type, begin=0, end=None):
         machine_type = os.path.split(target_dir)[1]
         model_file_path = "{model}/model_{machine_type}.hdf5".format(model=param["model_directory"],
                                                                      machine_type=machine_type)
-        history_img = "{model}/history_{machine_type}.png".format(model=param["model_directory"],
-                                                                  machine_type=machine_type)
 
         if os.path.exists(model_file_path):
             print("model exists")

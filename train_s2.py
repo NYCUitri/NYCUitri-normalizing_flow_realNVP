@@ -1,3 +1,4 @@
+# find the threshold
 
 import my_model
 from matplotlib import pyplot as plt
@@ -11,24 +12,9 @@ import getThreshold as gt
 
 def create_mini_batches(x, batch_size):
     mini_batches = []
-    
-    np.random.shuffle(x)
-
-    n_minibatches = x.shape[0] // batch_size
-    i = 0
- 
-    for i in range(n_minibatches + 1):
-        mini_batch = x[i * batch_size:(i + 1)*batch_size, :]
-        X_mini = mini_batch[:, :]
-        mini_batches.append((X_mini))
-
-    if X_mini.shape[0] % batch_size != 0:
-        mini_batch = x[i * batch_size:x.shape[0]]
-        X_mini = mini_batch[:, :]
-        mini_batches.append((X_mini))
+    x = np.array(x)
+    mini_batches = np.array_split(x, x.shape[0] // batch_size + 1)
     return mini_batches
-
-
 
 '''load the traind model'''
 param = com.yaml_load()
@@ -36,12 +22,8 @@ base = nf.distributions.base.DiagGaussian(param["feature"]["n_mels"]*param["feat
 num_layers = param['NF_layers']
 flows = []
 for i in range(num_layers):
-    
-    # Last layer is initialized by zeros making training more stable
     param_map = nf.nets.MLP([int(param["feature"]["n_mels"]*param["feature"]["frames"]/2), param["MLP_dim"], param["MLP_dim"], param["feature"]["n_mels"]*param["feature"]["frames"]], init_zeros=True)
-    # Add flow layer
     flows.append(nf.flows.AffineCouplingBlock(param_map))
-    # Swap dimensions
     flows.append(nf.flows.Permute(2, mode='swap'))
 
 
@@ -53,55 +35,62 @@ model = model.to(device)
 
 
 '''load normal data'''
-normal_data=dl.dataloader('valve', begin=0, end=1000)
-batch_size = param["fit"]["batch_size"]
+normal_data=dl.dataloader(machine_type='pump', begin=0, end=20)
+batch_size = param["fit"]["batch_size_s2"]
 mini_batches = create_mini_batches(normal_data, batch_size)
 loss_normal=np.array([])
-for mini_batch in mini_batches[:-1]:
+''' Run the model to get the loss.'''
+for mini_batch in mini_batches:
     X_mini = torch.tensor(mini_batch).float().to(device)
     
     z, loss_batch = model.x_to_z(X_mini)
     loss=loss_batch.to('cpu').detach().numpy()
     loss_normal=np.concatenate((loss_normal, loss), axis=None)
 
-
-with open('loss_normal_1.json', 'w', encoding='utf-8') as f:
+with open('jsons\\loss_normal.json', 'w', encoding='utf-8') as f:
     json.dump(list(loss_normal.astype(float)), f, ensure_ascii=False)
 
 
 '''load outlier data'''
-import dataloader_anomaly
-outlier_data=dataloader_anomaly.dataloader('valve', begin=0, end=500)
-# outlier_data=dl.dataloader('ToyCar', begin=0, end=1000)
+# Loading outlier data is kust for evt modeling. If get_threshold_simple() is chosen, this part is not needed.
 
-batch_size = param["fit"]["batch_size"]
+# Note that dataloader_anomaly is used to load anomaly data. However, in the real training section,
+# we might not have the anomaly data. So this dataloader_anomaly part is just for developing the program.
+
+# import dataloader_anomaly
+# outlier_data=dataloader_anomaly.dataloader(machine_type='pump', begin=0, end=20)
+
+outlier_data=dl.dataloader(machine_type='ToyTrain', begin=100, end=105)
 mini_batches = create_mini_batches(outlier_data, batch_size)
 loss_anomaly=np.array([])
-for mini_batch in mini_batches[:-1]:
+for mini_batch in mini_batches:
     X_mini = torch.tensor(mini_batch).float().to(device)
     
     z, loss_batch = model.x_to_z(X_mini)
     loss=loss_batch.to('cpu').detach().numpy()
     loss_anomaly=np.concatenate((loss_anomaly, loss), axis=None)
-
-
-# remove nan and inf
+print('max normal:', max(loss_normal))
+print('max anomaly:', max(loss_anomaly))
+# ignore nan and too big loss
 loss_anomaly = loss_anomaly[~np.isnan(loss_anomaly)]
-
-with open('loss_anomaly_1.json', 'w', encoding='utf-8') as f:
+loss_anomaly = loss_anomaly[loss_anomaly<1000]
+loss_normal = loss_normal[loss_normal<1000]
+with open('jsons\\loss_anomaly.json', 'w', encoding='utf-8') as f:
     json.dump(list(loss_anomaly.astype(float)), f, ensure_ascii=False)
 
 '''draw histogram'''
 loss_con=np.concatenate((loss_normal, loss_anomaly), axis=None)
 e=int(min(loss_con))
-d=2.5
-d=(int(max(loss_con))-int(min(loss_con)))/1000
+# d=2.5
+d=(int(max(loss_con))-int(min(loss_con)))/2500
 
 bins_list=[e]
 i=0
 # upper=int(max(loss_con))
 upper=max(loss_con)
-# upper=50000
+print(max(loss_anomaly))
+d = 2.5
+upper=1000
 while e<upper:
     e+=d
     bins_list.append(e)
@@ -113,24 +102,15 @@ if draw:
     ax.hist(loss_normal, bins = bins_list, color='r', alpha=0.5)
     ax.hist(loss_anomaly, bins = bins_list, color='g', alpha=0.5)
     # ax.hist(loss_con, bins = bins_list, color='b', alpha=0.5)
-print(np.median(loss_normal))
-print(np.median(loss_anomaly))
+print('median normal:', np.median(loss_normal))
+print('median anomaly:', np.median(loss_anomaly))
 
-# draw_anomaly=0
-# if draw_anomaly:
-    
-#     e=int(min(loss_anomaly))
-#     d=(int(max(loss_anomaly))-int(min(loss_anomaly)))/100
-#     # d=10
-#     bins_list=[e]
-#     i=0
-#     upper=int(max(loss_anomaly))
-#     while e<upper:
-#         e+=d
-#         bins_list.append(e)
-#     ax.hist(loss_anomaly, bins = bins_list, color='g', alpha=0.5)
-
-plt.savefig('plots\\two_loss_1.png') 
+plt.savefig('plots\\two_loss.png') 
 plt.show()
 
-# threshold = gt.get_threshold()
+# call get_threshold function
+threshold = gt.get_threshold_simple()
+# print("threshold:", threshold)
+# Save the value to threshold.json.
+with open('jsons\\threshold.json', 'w', encoding='utf-8') as f:
+    json.dump(threshold, f, ensure_ascii=False)

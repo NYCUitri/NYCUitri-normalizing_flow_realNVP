@@ -5,13 +5,6 @@
  Copyright (C) 2020 Hitachi, Ltd. All right reserved.
 """
 
-
-
-
-########################################################################
-# import additional python-library
-########################################################################
-
 # from import
 from tqdm import tqdm
 
